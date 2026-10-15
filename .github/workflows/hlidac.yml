@@ -19,6 +19,7 @@ jobs:
     timeout-minutes: 5
     env:
       TZ: Europe/Prague
+      HALLS: Sprint   # Paradise blokuje servery GitHubu (Cloudflare 403) – zatím vypnuto
       NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
     steps:
       - uses: actions/checkout@v4

@@ -23,6 +23,7 @@ from pathlib import Path
 # hlídaná okna, např. "8:00-9:00,15:00-18:00"
 WINDOWS = [tuple(w.strip().split("-")) for w in os.environ.get("WINDOWS", "8:00-9:00,15:00-18:00").split(",")]
 WEEKDAYS = {int(d) for d in os.environ.get("WEEKDAYS", "0,1,2,3,4").split(",")}  # 0 = pondělí
+HALLS = {h.strip() for h in os.environ.get("HALLS", "Sprint,Paradise").split(",")}
 DAYS_AHEAD = int(os.environ.get("DAYS_AHEAD", "14"))
 STATE_FILE = Path(os.environ.get("STATE_FILE", Path(__file__).with_name("state.json")))
 UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/128 Safari/537.36"
@@ -224,6 +225,8 @@ def main():
     now_min = dt.datetime.now().hour * 60 + dt.datetime.now().minute
     current, errors = [], []
     for name, fn in (("Sprint", fetch_sprint), ("Paradise", lambda: fetch_paradise(days))):
+        if name not in HALLS:
+            continue
         try:
             current += fn()
         except Exception as e:  # jedna hala nesmí shodit druhou
@@ -239,7 +242,7 @@ def main():
     keep = {k for k in prev if k.split("|")[0] in failed}
     now_keys = {key(s) for s in current} | keep
     new = [s for s in current if key(s) not in prev]
-    halls_ok = ({"Sprint", "Paradise"} - failed) | (prev_halls & failed)
+    halls_ok = (HALLS - failed) | (prev_halls & failed)
     baseline = [s for s in new if s[0] not in prev_halls]
     freed = [s for s in new if s[0] in prev_halls]
 
@@ -260,7 +263,7 @@ def main():
     if not dry:
         STATE_FILE.write_text(json.dumps({"checked": dt.datetime.now().isoformat(timespec="seconds"),
                                           "halls": sorted(halls_ok), "free": sorted(now_keys), "errors": errors}, ensure_ascii=False, indent=1))
-    return 1 if len(errors) == 2 else 0
+    return 1 if len(errors) == len(HALLS) else 0
 
 
 if __name__ == "__main__":
