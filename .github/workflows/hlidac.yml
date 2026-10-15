@@ -1,0 +1,31 @@
+name: Hlídač kurtů
+
+on:
+  schedule:
+    - cron: "*/5 4-21 * * *"        # UTC → přes den v Praze každých 5 min
+    - cron: "*/15 0-3,22-23 * * *"  # v noci každých 15 min
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hlidac
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      TZ: Europe/Prague
+      NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 hlidac.py
+      - name: Uložit stav
+        run: |
+          git config user.name "hlidac-bot"
+          git config user.email "hlidac-bot@users.noreply.github.com"
+          git add state.json
+          git diff --cached --quiet || (git commit -m "stav $(date '+%d.%m. %H:%M')" && git push)
