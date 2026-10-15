@@ -48,7 +48,10 @@ def opener():
 
 
 def get(op, url):
-    req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept-Language": "cs"})
+    req = urllib.request.Request(url, headers={
+        "User-Agent": UA, "Accept-Language": "cs-CZ,cs;q=0.9,en;q=0.8",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Upgrade-Insecure-Requests": "1"})
     with op.open(req, timeout=30) as r:
         return r.read().decode("utf-8", "replace")
 
@@ -227,30 +230,36 @@ def main():
             errors.append(f"{name}: {e}")
     current = [s for s in current if in_window(s) and not (s[1] == today.isoformat() and s[2] <= now_min)]
 
-    first_run = not STATE_FILE.exists()
-    prev = set(json.loads(STATE_FILE.read_text())["free"]) if not first_run else set()
+    state = json.loads(STATE_FILE.read_text()) if STATE_FILE.exists() else {}
+    prev = set(state.get("free", []))
+    # haly, které už aspoň jednou prošly – u nové haly jde o výchozí přehled, ne o "uvolnění"
+    prev_halls = set(state.get("halls") or {k.split("|")[0] for k in prev})
     # hala, která selhala, si nechá starý stav (aby se po výpadku neposílaly "nové" termíny)
     failed = {e.split(":")[0] for e in errors}
     keep = {k for k in prev if k.split("|")[0] in failed}
     now_keys = {key(s) for s in current} | keep
     new = [s for s in current if key(s) not in prev]
+    halls_ok = ({"Sprint", "Paradise"} - failed) | (prev_halls & failed)
+    baseline = [s for s in new if s[0] not in prev_halls]
+    freed = [s for s in new if s[0] in prev_halls]
 
     print(f"{dt.datetime.now():%Y-%m-%d %H:%M} volných: {len(current)}, nových: {len(new)}" + (f", chyby: {errors}" if errors else ""))
     if new:
         print(describe(new))
 
-    if new and not dry:
-        title = ("Aktuálně volné kurty" if first_run else "Uvolnil se kurt!") + f" ({', '.join(f'{a}–{b}' for a, b in WINDOWS)})"
-        body = describe(new) + "\n\nRychle rezervuj – kdo dřív přijde…"
-        send_email(title, body)
-        halls = {s[0] for s in new}
-        send_push(title, describe(new), LINKS[halls.pop()] if len(halls) == 1 else None)
-        if not first_run:
-            send_sms(short(new))
+    windows = ", ".join(f"{a}–{b}" for a, b in WINDOWS)
+    for group, title in ((baseline, f"Aktuálně volné kurty ({windows})"), (freed, f"Uvolnil se kurt! ({windows})")):
+        if not group or dry:
+            continue
+        send_email(title, describe(group) + "\n\nRychle rezervuj – kdo dřív přijde…")
+        halls = {s[0] for s in group}
+        send_push(title, describe(group), LINKS[halls.pop()] if len(halls) == 1 else None)
+        if group is freed:
+            send_sms(short(group))
 
     if not dry:
         STATE_FILE.write_text(json.dumps({"checked": dt.datetime.now().isoformat(timespec="seconds"),
-                                          "free": sorted(now_keys), "errors": errors}, ensure_ascii=False, indent=1))
+                                          "halls": sorted(halls_ok), "free": sorted(now_keys), "errors": errors}, ensure_ascii=False, indent=1))
     return 1 if len(errors) == 2 else 0
 
 
