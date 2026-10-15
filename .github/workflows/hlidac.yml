@@ -2,8 +2,7 @@ name: Hlídač kurtů
 
 on:
   schedule:
-    - cron: "*/5 4-21 * * *"        # UTC → přes den v Praze každých 5 min
-    - cron: "*/15 0-3,22-23 * * *"  # v noci každých 15 min
+    - cron: "*/5 5-20 * * *"   # UTC; skript sám běží jen 7:00–21:00 pražského času (letní i zimní čas)
   workflow_dispatch:
 
 permissions:

@@ -24,6 +24,7 @@ from pathlib import Path
 WINDOWS = [tuple(w.strip().split("-")) for w in os.environ.get("WINDOWS", "8:00-9:00,15:00-18:00").split(",")]
 WEEKDAYS = {int(d) for d in os.environ.get("WEEKDAYS", "0,1,2,3,4").split(",")}  # 0 = pondělí
 HALLS = {h.strip() for h in os.environ.get("HALLS", "Sprint,Paradise").split(",")}
+ACTIVE_FROM, ACTIVE_TO = os.environ.get("ACTIVE_HOURS", "7:00-21:00").split("-")  # mimo tuto dobu se nekontroluje
 DAYS_AHEAD = int(os.environ.get("DAYS_AHEAD", "14"))
 STATE_FILE = Path(os.environ.get("STATE_FILE", Path(__file__).with_name("state.json")))
 UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/128 Safari/537.36"
@@ -219,6 +220,10 @@ def send_push(title, text, click=None):
 
 def main():
     dry = "--dry-run" in sys.argv
+    now = dt.datetime.now()
+    if not hm(ACTIVE_FROM) <= now.hour * 60 + now.minute < hm(ACTIVE_TO) and "--force" not in sys.argv:
+        print(f"{now:%H:%M} mimo hlídanou dobu {ACTIVE_FROM}–{ACTIVE_TO}, nic nedělám")
+        return 0
     today = dt.date.today()
     days = [today + dt.timedelta(n) for n in range(DAYS_AHEAD) if (today + dt.timedelta(n)).weekday() in WEEKDAYS]
 
@@ -245,12 +250,23 @@ def main():
     halls_ok = (HALLS - failed) | (prev_halls & failed)
     baseline = [s for s in new if s[0] not in prev_halls]
     freed = [s for s in new if s[0] in prev_halls]
+    # první kontrola dne = ranní souhrn toho, co se uvolnilo přes noc (přijde i když nic)
+    last = dt.datetime.fromisoformat(state["checked"]) if state.get("checked") else None
+    morning = last is not None and last.date() < today
 
     print(f"{dt.datetime.now():%Y-%m-%d %H:%M} volných: {len(current)}, nových: {len(new)}" + (f", chyby: {errors}" if errors else ""))
     if new:
         print(describe(new))
 
     windows = ", ".join(f"{a}–{b}" for a, b in WINDOWS)
+    if morning and not dry:
+        if freed:
+            send_push(f"Přes noc se uvolnilo ({windows})", describe(freed),
+                      LINKS[next(iter({s[0] for s in freed}))] if len({s[0] for s in freed}) == 1 else None)
+        else:
+            send_push("Dobré ráno – přes noc se nic neuvolnilo",
+                      f"Hlídám dál do {ACTIVE_TO}. Aktuálně volných hodin: {len(current)}.")
+        freed = []
     for group, title in ((baseline, f"Aktuálně volné kurty ({windows})"), (freed, f"Uvolnil se kurt! ({windows})")):
         if not group or dry:
             continue
