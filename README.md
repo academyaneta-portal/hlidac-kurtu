@@ -1,6 +1,6 @@
 # Hlídač kurtů – Sprint & Paradise (Brno)
 
-Každých ~5 minut (v noci 15) zkontroluje volné hodiny **po–pá 15:00–18:00** na:
+Každých ~5 minut (v noci 15) zkontroluje volné hodiny **po–pá 8:00–9:00 a 15:00–18:00** na:
 
 - hala Sprint – https://memberzone.cz/sprint_tenis/ (systém ukazuje 7 dní dopředu)
 - Tenis Paradise – https://jdemenato.cz/reservation/tenis-paradise/reservationcalendaroverview (hlídá 14 dní)
@@ -10,7 +10,7 @@ Běží přes GitHub Actions (`.github/workflows/hlidac.yml`), stav posledního 
 
 ## Změna nastavení
 Do `env:` ve workflow lze přidat:
-- `WINDOW_FROM` / `WINDOW_TO` – časové okno (výchozí `15:00` / `18:00`)
+- `WINDOWS` – hlídaná okna (výchozí `8:00-9:00,15:00-18:00`)
 - `WEEKDAYS` – dny (0 = po … 6 = ne), výchozí `0,1,2,3,4`
 - `DAYS_AHEAD` – kolik dní dopředu hlídat u Paradise (výchozí 14)
 

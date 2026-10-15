@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Hlídač volných kurtů – hala Sprint a Tenis Paradise (Brno).
 
-Hlídá odpolední termíny (výchozí: po–pá, 15:00–18:00) a pošle e-mail / SMS,
+Hlídá odpolední termíny (výchozí: po–pá, 8:00–9:00 a 15:00–18:00) a pošle e-mail / SMS,
 když se objeví nově uvolněná hodina. Stav posledního běhu drží v state.json.
 
 Konfigurace přes proměnné prostředí (viz README.md).
@@ -20,8 +20,8 @@ from email.mime.text import MIMEText
 from html.parser import HTMLParser
 from pathlib import Path
 
-WINDOW_FROM = os.environ.get("WINDOW_FROM", "15:00")
-WINDOW_TO = os.environ.get("WINDOW_TO", "18:00")
+# hlídaná okna, např. "8:00-9:00,15:00-18:00"
+WINDOWS = [tuple(w.strip().split("-")) for w in os.environ.get("WINDOWS", "8:00-9:00,15:00-18:00").split(",")]
 WEEKDAYS = {int(d) for d in os.environ.get("WEEKDAYS", "0,1,2,3,4").split(",")}  # 0 = pondělí
 DAYS_AHEAD = int(os.environ.get("DAYS_AHEAD", "14"))
 STATE_FILE = Path(os.environ.get("STATE_FILE", Path(__file__).with_name("state.json")))
@@ -138,7 +138,7 @@ def fetch_paradise(days):
 def in_window(slot):
     _, day, start, dur, _ = slot
     d = dt.date.fromisoformat(day)
-    return d.weekday() in WEEKDAYS and start >= hm(WINDOW_FROM) and start + dur <= hm(WINDOW_TO)
+    return d.weekday() in WEEKDAYS and any(start >= hm(a) and start + dur <= hm(b) for a, b in WINDOWS)
 
 
 def key(slot):
@@ -240,7 +240,7 @@ def main():
         print(describe(new))
 
     if new and not dry:
-        title = ("Aktuálně volné kurty" if first_run else "Uvolnil se kurt!") + f" ({WINDOW_FROM}–{WINDOW_TO}, po–pá)"
+        title = ("Aktuálně volné kurty" if first_run else "Uvolnil se kurt!") + f" ({', '.join(f'{a}–{b}' for a, b in WINDOWS)})"
         body = describe(new) + "\n\nRychle rezervuj – kdo dřív přijde…"
         send_email(title, body)
         halls = {s[0] for s in new}
