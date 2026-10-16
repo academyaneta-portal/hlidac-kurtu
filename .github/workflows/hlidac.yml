@@ -1,12 +1,16 @@
 name: Hlídač kurtů
 
+# Plánovač GitHubu (cron) u bezplatných repozitářů spouští běhy se zpožděním i několik hodin,
+# proto jeden běh kontroluje ve smyčce každé ~4 min a po ~5,5 h spustí svého nástupce (workflow_dispatch
+# se spouští hned). Cron níže je jen záchrana, kdyby se řetěz přerušil; souběžný běh je vždy max. jeden.
 on:
   schedule:
-    - cron: "*/5 5-20 * * *"   # UTC; skript sám běží jen 7:00–21:00 pražského času (letní i zimní čas)
+    - cron: "17 */2 * * *"
   workflow_dispatch:
 
 permissions:
   contents: write
+  actions: write
 
 concurrency:
   group: hlidac
@@ -15,17 +19,29 @@ concurrency:
 jobs:
   check:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 350
     env:
       TZ: Europe/Prague
       HALLS: Sprint   # Paradise blokuje servery GitHubu (Cloudflare 403) – zatím vypnuto
       NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
     steps:
       - uses: actions/checkout@v4
-      - run: python3 hlidac.py
-      - name: Uložit stav
+      - name: Hlídat (smyčka ~5,5 h)
         run: |
           git config user.name "hlidac-bot"
           git config user.email "hlidac-bot@users.noreply.github.com"
-          git add state.json
-          git diff --cached --quiet || (git commit -m "stav $(date '+%d.%m. %H:%M')" && git push)
+          end=$(( $(date +%s) + 330 * 60 ))
+          while [ "$(date +%s)" -lt "$end" ]; do
+            python3 hlidac.py || true
+            git add state.json
+            if ! git diff --cached --quiet; then
+              git commit -qm "stav $(date '+%d.%m. %H:%M')"
+              git push -q || (git pull -q --rebase && git push -q) || true
+            fi
+            sleep 240
+          done
+      - name: Spustit dalšího hlídače
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run hlidac.yml --ref main
