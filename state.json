@@ -1,5 +1,5 @@
 {
- "checked": "2026-10-25T13:01:44",
+ "checked": "2026-10-25T13:05:48",
  "halls": [
   "Sprint"
  ],
@@ -7,9 +7,14 @@
   "Sprint|2026-10-26|15:00|kurt 2 beton",
   "Sprint|2026-10-26|15:00|kurt 3 beton",
   "Sprint|2026-10-26|15:00|kurt 5 koberec",
+  "Sprint|2026-10-26|15:00|kurt 6 koberec",
   "Sprint|2026-10-26|15:30|kurt 2 beton",
+  "Sprint|2026-10-26|15:30|kurt 6 koberec",
+  "Sprint|2026-10-26|16:00|kurt 6 koberec",
   "Sprint|2026-10-26|8:00|kurt 5 koberec",
   "Sprint|2026-10-27|15:00|kurt 4 koberec",
+  "Sprint|2026-10-27|15:00|kurt 6 koberec",
+  "Sprint|2026-10-27|15:30|kurt 5 koberec",
   "Sprint|2026-10-28|15:00|kurt 6 koberec",
   "Sprint|2026-10-28|15:30|kurt 6 koberec",
   "Sprint|2026-10-28|16:00|kurt 6 koberec",
