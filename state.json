@@ -1,11 +1,12 @@
 {
- "checked": "2026-11-10T20:28:00",
+ "checked": "2026-11-10T20:32:03",
  "halls": [
   "Sprint"
  ],
  "free": [
   "Sprint|2026-11-11|16:30|kurt 2 beton",
-  "Sprint|2026-11-11|17:00|kurt 2 beton"
+  "Sprint|2026-11-11|17:00|kurt 2 beton",
+  "Sprint|2026-11-12|15:00|kurt 5 koberec"
  ],
  "errors": []
 }
