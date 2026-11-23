@@ -1,5 +1,5 @@
 {
- "checked": "2026-11-23T10:41:14",
+ "checked": "2026-11-23T10:45:18",
  "halls": [
   "Sprint"
  ],
@@ -7,8 +7,7 @@
   "Sprint|2026-11-23|15:00|kurt 4 koberec",
   "Sprint|2026-11-23|16:00|kurt 6 koberec",
   "Sprint|2026-11-23|16:30|kurt 6 koberec",
-  "Sprint|2026-11-24|15:00|kurt 4 koberec",
-  "Sprint|2026-11-24|15:00|kurt 6 koberec"
+  "Sprint|2026-11-24|15:00|kurt 4 koberec"
  ],
  "errors": []
 }
